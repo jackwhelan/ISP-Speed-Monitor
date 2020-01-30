@@ -1,5 +1,7 @@
 ﻿using System;
 using System.IO;
+using System.IO.Compression;
+using System.Net;
 
 namespace SpeedMonCMD
 {
@@ -7,6 +9,11 @@ namespace SpeedMonCMD
     {
         static void Main(string[] args)
         {
+            using (var client = new WebClient())
+            {
+                client.DownloadFile("https://jackwhelan.dev/archive/data.zip", @"C:\Users\jackw\Desktop\Logs\data.zip");
+            }
+            ZipFile.ExtractToDirectory(@"C:\Users\jackw\Desktop\Logs\data.zip", @"C:\Users\jackw\Desktop\Logs");
             DirectoryInfo d = new DirectoryInfo("C:\\Users\\jackw\\Desktop\\Logs");
             FileInfo[] Files = d.GetFiles("*.log");
             foreach (FileInfo file in Files)
