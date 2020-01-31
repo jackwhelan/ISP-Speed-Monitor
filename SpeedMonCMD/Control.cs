@@ -47,23 +47,88 @@ namespace SpeedMonCMD
             FileInfo[] Files = d.GetFiles("*.log");
             foreach (FileInfo file in Files)
             {
-                bool isPM;
-                if (file.Name.Split("_")[5].Contains("PM"))
+                // If log is less than 400 bytes (something is wrong, so delete the log.)
+                if (file.Length < 400)
                 {
-                    isPM = true;
+                    file.Delete();
                 }
                 else
                 {
-                    isPM = false;
-                }
-                Speedtest current = new Speedtest(System.Convert.ToInt32(file.Name.Split("_")[0]), System.Convert.ToInt32(file.Name.Split("_")[1]), System.Convert.ToInt32(file.Name.Split("_")[2]), System.Convert.ToInt32(file.Name.Split("_")[3]), System.Convert.ToInt32(file.Name.Split("_")[4]), isPM);
-                tests.Add(current);
-            }
+                    string tod;
+                    if (file.Name.Split("_")[5].Contains("PM"))
+                    {
+                        tod = "PM";
+                    }
+                    else
+                    {
+                        tod = "AM";
+                    }
+                    Speedtest current = new Speedtest(Convert.ToInt32(file.Name.Split("_")[0]), Convert.ToInt32(file.Name.Split("_")[1]), Convert.ToInt32(file.Name.Split("_")[2]), Convert.ToInt32(file.Name.Split("_")[3]), Convert.ToInt32(file.Name.Split("_")[4]), tod);
 
-            // Looping through the speedtest objects and printing the date.
-            foreach (Speedtest test in tests)
-            {
-                Console.WriteLine(test.getTime() + " | " + test.getDate());
+                    // FILE PARSING HERE
+
+                    using (StreamReader sr = file.OpenText())
+                    {
+                        string line;
+
+                        while ((line = sr.ReadLine()) != null)
+                        {
+                            if (line.Contains("Testing from") && line.Contains("(") && line.Contains(")"))
+                            {
+                                current.ip = "";
+                                for (int start = line.IndexOf("(") + 1; line[start] != ')'; start++)
+                                {
+                                    current.ip = current.ip + line[start];
+                                }
+                            }
+                            if (line.Contains("Hosted by") && line.Contains("ms"))
+                            {
+                                current.server = "";
+                                string server_distance = "";
+                                string ping = "";
+                                for (int start = line.IndexOf("y") + 2; line[start] != '('; start++)
+                                {
+                                    current.server = current.server + line[start];
+                                }
+                                for (int start = line.IndexOf("[") + 1; line[start] != ' '; start++)
+                                {
+                                    server_distance = server_distance + line[start];
+                                    current.server_distance = Convert.ToDouble(server_distance);
+                                }
+                                for (int start = line.IndexOf(": ") + 2; line[start] != ' '; start++)
+                                {
+                                    ping = ping + line[start];
+                                    current.ping = Convert.ToDouble(ping);
+                                }
+                            }
+                            if (line.Contains("Download") && line.Contains("Mbit/s"))
+                            {
+                                string speed = "";
+                                for (int start = line.IndexOf(": ") + 2; line[start] != ' '; start++)
+                                {
+                                    speed = speed + line[start];
+                                    current.down = Convert.ToDouble(speed);
+                                }
+                            }
+                            if (line.Contains("Upload") && line.Contains("Mbit/s"))
+                            {
+                                string speed = "";
+                                for (int start = line.IndexOf(": ") + 2; line[start] != ' '; start++)
+                                {
+                                    speed = speed + line[start];
+                                    current.up = Convert.ToDouble(speed);
+                                }
+                            }
+                        }
+                    }
+
+                    tests.Add(current);
+                }
+
+                foreach (Speedtest test in tests)
+                {
+                    Console.Write(test.toString());
+                }
             }
         }
     }
